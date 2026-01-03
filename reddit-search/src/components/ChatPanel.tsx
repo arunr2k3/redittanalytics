@@ -7,6 +7,20 @@
 
 import { useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
+import {
+  Box,
+  IconButton,
+  VStack,
+  HStack,
+  Text,
+  Input,
+  Button,
+  Flex,
+  useColorModeValue,
+  Collapse,
+  Spinner,
+} from "@chakra-ui/react";
+import { CloseIcon, ChatIcon } from "@chakra-ui/icons";
 import { ParsedPost } from "@/types/reddit";
 
 interface Message {
@@ -27,6 +41,10 @@ export default function ChatPanel({ posts, keyword }: ChatPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const panelBg = useColorModeValue("white", "gray.800");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const assistantBg = useColorModeValue("gray.100", "gray.700");
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -45,12 +63,11 @@ export default function ChatPanel({ posts, keyword }: ChatPanelProps) {
     setError(null);
 
     try {
-      // Build context from ALL Reddit posts
       const context = {
         keyword,
         posts: posts.map((p) => ({
           title: p.title,
-          body: p.body.slice(0, 500), // Truncate long bodies
+          body: p.body.slice(0, 500),
           subreddit: p.subreddit,
           author: p.author,
           score: p.score,
@@ -85,99 +102,116 @@ export default function ChatPanel({ posts, keyword }: ChatPanelProps) {
   return (
     <>
       {/* Chat Toggle Button */}
-      <button
+      <IconButton
+        aria-label="Toggle chat"
+        icon={isOpen ? <CloseIcon /> : <Text fontSize="2xl">🤖</Text>}
+        position="fixed"
+        bottom={6}
+        right={6}
+        w={14}
+        h={14}
+        borderRadius="full"
+        bgGradient="linear(to-br, blue.500, purple.600)"
+        color="white"
+        _hover={{ bgGradient: "linear(to-br, blue.600, purple.700)" }}
+        shadow="lg"
+        zIndex={50}
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 
-                   rounded-full shadow-lg flex items-center justify-center text-white
-                   hover:from-blue-600 hover:to-purple-700 transition-all z-50"
-        title="Chat with AI"
-      >
-        {isOpen ? (
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        ) : (
-          <span className="text-2xl">🤖</span>
-        )}
-      </button>
+      />
 
       {/* Chat Panel */}
-      {isOpen && (
-        <div className="fixed bottom-24 right-6 w-96 h-[500px] bg-white dark:bg-gray-800 
-                        rounded-xl shadow-2xl flex flex-col z-50 border border-gray-200 dark:border-gray-700">
+      <Collapse in={isOpen} animateOpacity>
+        <Box
+          position="fixed"
+          bottom={24}
+          right={6}
+          w="96"
+          h="500px"
+          bg={panelBg}
+          borderRadius="xl"
+          shadow="2xl"
+          display="flex"
+          flexDirection="column"
+          zIndex={50}
+          border="1px"
+          borderColor={borderColor}
+        >
           {/* Header */}
-          <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 flex items-center gap-2">
-            <span className="text-xl">🤖</span>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-white">AI Assistant</h3>
-              <p className="text-xs text-gray-500">Powered by Gemini Flash</p>
-            </div>
-          </div>
+          <HStack px={4} py={3} borderBottom="1px" borderColor={borderColor} spacing={2}>
+            <Text fontSize="xl">🤖</Text>
+            <Box>
+              <Text fontWeight="semibold">AI Assistant</Text>
+              <Text fontSize="xs" color="gray.500">Powered by Gemini Flash</Text>
+            </Box>
+          </HStack>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
-            {messages.length === 0 && (
-              <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                <p className="text-sm">Ask me anything about the search results!</p>
-                {posts.length > 0 && (
-                  <p className="text-xs mt-2">I have context from <strong>all {posts.length} posts</strong> about &quot;{keyword}&quot;</p>
-                )}
-              </div>
-            )}
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                <div className={`max-w-[85%] rounded-lg px-3 py-2 text-sm ${msg.role === "user"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
-                  }`}>
-                  {msg.role === "assistant" ? (
-                    <div className="prose prose-sm dark:prose-invert max-w-none">
-                      <ReactMarkdown>{msg.content}</ReactMarkdown>
-                    </div>
-                  ) : msg.content}
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start">
-                <div className="bg-gray-100 dark:bg-gray-700 rounded-lg px-4 py-2">
-                  <div className="flex gap-1">
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
-                  </div>
-                </div>
-              </div>
-            )}
-            {error && <div className="text-red-500 text-sm text-center">{error}</div>}
-            <div ref={messagesEndRef} />
-          </div>
+          <Box flex="1" overflowY="auto" p={4}>
+            <VStack spacing={3} align="stretch">
+              {messages.length === 0 && (
+                <Box textAlign="center" color="gray.500" py={8}>
+                  <Text fontSize="sm">Ask me anything about the search results!</Text>
+                  {posts.length > 0 && (
+                    <Text fontSize="xs" mt={2}>
+                      I have context from <strong>all {posts.length} posts</strong> about &quot;{keyword}&quot;
+                    </Text>
+                  )}
+                </Box>
+              )}
+              {messages.map((msg, i) => (
+                <Flex key={i} justify={msg.role === "user" ? "flex-end" : "flex-start"}>
+                  <Box
+                    maxW="85%"
+                    borderRadius="lg"
+                    px={3}
+                    py={2}
+                    fontSize="sm"
+                    bg={msg.role === "user" ? "blue.600" : assistantBg}
+                    color={msg.role === "user" ? "white" : undefined}
+                  >
+                    {msg.role === "assistant" ? (
+                      <Box className="prose prose-sm dark:prose-invert max-w-none">
+                        <ReactMarkdown>{msg.content}</ReactMarkdown>
+                      </Box>
+                    ) : msg.content}
+                  </Box>
+                </Flex>
+              ))}
+              {isLoading && (
+                <Flex justify="flex-start">
+                  <Box bg={assistantBg} borderRadius="lg" px={4} py={2}>
+                    <Spinner size="sm" />
+                  </Box>
+                </Flex>
+              )}
+              {error && <Text color="red.500" fontSize="sm" textAlign="center">{error}</Text>}
+              <div ref={messagesEndRef} />
+            </VStack>
+          </Box>
 
           {/* Input */}
-          <div className="p-3 border-t border-gray-200 dark:border-gray-700">
-            <div className="flex gap-2">
-              <input
-                type="text"
+          <Box p={3} borderTop="1px" borderColor={borderColor}>
+            <HStack spacing={2}>
+              <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder="Type a message..."
-                className="flex-1 px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg
-                           dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isLoading}
+                size="sm"
+                isDisabled={isLoading}
               />
-              <button
+              <Button
+                colorScheme="blue"
+                size="sm"
                 onClick={handleSend}
-                disabled={isLoading || !input.trim()}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 
-                           disabled:opacity-50 disabled:cursor-not-allowed"
+                isDisabled={isLoading || !input.trim()}
               >
                 Send
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+            </HStack>
+          </Box>
+        </Box>
+      </Collapse>
     </>
   );
 }

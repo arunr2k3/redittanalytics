@@ -6,6 +6,22 @@
 "use client";
 
 import { useState } from "react";
+import {
+  Box,
+  Card,
+  CardBody,
+  Heading,
+  Text,
+  HStack,
+  VStack,
+  Button,
+  Badge,
+  Link,
+  Collapse,
+  Icon,
+  useColorModeValue,
+} from "@chakra-ui/react";
+import { ChatIcon, TriangleUpIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import { ParsedPost } from "@/types/reddit";
 import CommentItem from "./CommentItem";
 
@@ -14,9 +30,6 @@ interface PostCardProps {
   index: number;
 }
 
-/**
- * Format Unix timestamp to human-readable date
- */
 function formatDate(utcTimestamp: number): string {
   const date = new Date(utcTimestamp * 1000);
   return date.toLocaleString("en-US", {
@@ -30,78 +43,85 @@ function formatDate(utcTimestamp: number): string {
 
 export default function PostCard({ post, index }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
+  const cardBg = useColorModeValue("white", "gray.800");
+  const commentsBg = useColorModeValue("gray.50", "gray.900");
+  const borderColor = useColorModeValue("gray.200", "gray.700");
+  const bodyColor = useColorModeValue("gray.600", "gray.300");
 
   return (
-    <article className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden mb-4">
-      {/* Post header */}
-      <div className="p-4 border-b border-gray-100 dark:border-gray-700">
+    <Card bg={cardBg} shadow="md" mb={4} overflow="hidden">
+      <CardBody p={4} borderBottom="1px" borderColor={borderColor}>
         {/* Subreddit and metadata */}
-        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-2">
-          <span className="font-medium text-reddit-blue">{post.subreddit}</span>
-          <span>•</span>
-          <span>Posted by {post.author}</span>
-          <span>•</span>
-          <span>{formatDate(post.created_utc)}</span>
-        </div>
+        <HStack spacing={2} fontSize="xs" color="gray.500" mb={2}>
+          <Badge colorScheme="blue" variant="subtle">{post.subreddit}</Badge>
+          <Text>•</Text>
+          <Text>Posted by {post.author}</Text>
+          <Text>•</Text>
+          <Text>{formatDate(post.created_utc)}</Text>
+        </HStack>
 
         {/* Post title */}
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-          <span className="text-gray-400 mr-2">#{index + 1}</span>
-          <a
+        <Heading size="md" mb={2}>
+          <Text as="span" color="gray.400" mr={2}>#{index + 1}</Text>
+          <Link
             href={post.permalink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-reddit-orange transition-colors"
+            isExternal
+            _hover={{ color: "orange.500" }}
           >
             {post.title}
-          </a>
-        </h2>
+          </Link>
+        </Heading>
 
-        {/* Post body (if text post) */}
+        {/* Post body */}
         {post.body && (
-          <div className="text-gray-700 dark:text-gray-300 text-sm mb-3 max-h-48 overflow-y-auto">
-            <p className="whitespace-pre-wrap">{post.body}</p>
-          </div>
+          <Box
+            fontSize="sm"
+            color={bodyColor}
+            mb={3}
+            maxH="48"
+            overflowY="auto"
+            whiteSpace="pre-wrap"
+          >
+            {post.body}
+          </Box>
         )}
 
         {/* Post stats */}
-        <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <span className="flex items-center gap-1">
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333v5.43a2 2 0 001.106 1.79l.05.025A4 4 0 008.943 18h5.416a2 2 0 001.962-1.608l1.2-6A2 2 0 0015.56 8H12V4a2 2 0 00-2-2 1 1 0 00-1 1v.667a4 4 0 01-.8 2.4L6.8 7.933a4 4 0 00-.8 2.4z" />
-            </svg>
-            {post.score} points
-          </span>
-          <button
+        <HStack spacing={4} fontSize="sm" color="gray.500">
+          <HStack spacing={1}>
+            <Icon as={TriangleUpIcon} />
+            <Text>{post.score} points</Text>
+          </HStack>
+          <Button
+            variant="ghost"
+            size="sm"
+            leftIcon={<ChatIcon />}
+            rightIcon={showComments ? <ChevronUpIcon /> : <ChevronDownIcon />}
             onClick={() => setShowComments(!showComments)}
-            className="flex items-center gap-1 hover:text-reddit-orange transition-colors"
+            _hover={{ color: "orange.500" }}
           >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd" />
-            </svg>
             {post.num_comments} comments
-            {showComments ? " ▲" : " ▼"}
-          </button>
-        </div>
-      </div>
+          </Button>
+        </HStack>
+      </CardBody>
 
       {/* Comments section */}
-      {showComments && (
-        <div className="p-4 bg-gray-50 dark:bg-gray-900 max-h-96 overflow-y-auto comments-scrollable">
+      <Collapse in={showComments} animateOpacity>
+        <Box p={4} bg={commentsBg} maxH="96" overflowY="auto">
           {post.comments.length > 0 ? (
-            <div className="space-y-3">
+            <VStack spacing={3} align="stretch">
               {post.comments.map((comment) => (
                 <CommentItem key={comment.id} comment={comment} />
               ))}
-            </div>
+            </VStack>
           ) : (
-            <p className="text-gray-500 dark:text-gray-400 text-sm italic">
+            <Text color="gray.500" fontSize="sm" fontStyle="italic">
               No comments available
-            </p>
+            </Text>
           )}
-        </div>
-      )}
-    </article>
+        </Box>
+      </Collapse>
+    </Card>
   );
 }
 
