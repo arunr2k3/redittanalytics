@@ -3,7 +3,6 @@
  * Displays a single comment with nested replies
  */
 
-import { Box, Text, HStack, VStack, useColorModeValue } from "@chakra-ui/react";
 import { ParsedComment } from "@/types/reddit";
 
 interface CommentItemProps {
@@ -26,36 +25,32 @@ export default function CommentItem({
   comment,
   maxDepthDisplay = 5,
 }: CommentItemProps) {
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-
   if (comment.depth > maxDepthDisplay) {
     return null;
   }
 
   return (
-    <Box
-      borderLeft="2px"
-      borderColor={borderColor}
-      pl={4}
-      ml={comment.depth > 0 ? 4 : 0}
+    <div
+      className="border-l-2 border-gray-200 pl-4"
+      style={{ marginLeft: comment.depth > 0 ? "1rem" : 0 }}
     >
       {/* Comment header */}
-      <HStack spacing={2} fontSize="xs" color="gray.500" mb={1}>
-        <Text fontWeight="medium" color="blue.500">{comment.author}</Text>
-        <Text>•</Text>
-        <Text>{formatDate(comment.created_utc)}</Text>
-        <Text>•</Text>
-        <Text>{comment.score} points</Text>
-      </HStack>
+      <div className="mb-1 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+        <span className="font-medium text-blue-600">{comment.author}</span>
+        <span>|</span>
+        <span>{formatDate(comment.created_utc)}</span>
+        <span>|</span>
+        <span>{comment.score} points</span>
+      </div>
 
       {/* Comment body */}
-      <Text fontSize="sm" whiteSpace="pre-wrap" mb={2}>
+      <p className="mb-2 whitespace-pre-wrap text-sm text-gray-800">
         {comment.body}
-      </Text>
+      </p>
 
       {/* Nested replies */}
       {comment.replies.length > 0 && (
-        <VStack spacing={2} align="stretch" mt={2}>
+        <div className="mt-2 flex flex-col gap-2">
           {comment.replies.map((reply) => (
             <CommentItem
               key={reply.id}
@@ -63,9 +58,8 @@ export default function CommentItem({
               maxDepthDisplay={maxDepthDisplay}
             />
           ))}
-        </VStack>
+        </div>
       )}
-    </Box>
+    </div>
   );
 }
-

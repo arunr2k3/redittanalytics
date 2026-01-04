@@ -6,22 +6,6 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Box,
-  Card,
-  CardBody,
-  Heading,
-  Text,
-  HStack,
-  VStack,
-  Button,
-  Badge,
-  Link,
-  Collapse,
-  Icon,
-  useColorModeValue,
-} from "@chakra-ui/react";
-import { ChatIcon, TriangleUpIcon, ChevronDownIcon, ChevronUpIcon } from "@chakra-ui/icons";
 import { ParsedPost } from "@/types/reddit";
 import CommentItem from "./CommentItem";
 
@@ -43,85 +27,111 @@ function formatDate(utcTimestamp: number): string {
 
 export default function PostCard({ post, index }: PostCardProps) {
   const [showComments, setShowComments] = useState(false);
-  const cardBg = useColorModeValue("white", "gray.800");
-  const commentsBg = useColorModeValue("gray.50", "gray.900");
-  const borderColor = useColorModeValue("gray.200", "gray.700");
-  const bodyColor = useColorModeValue("gray.600", "gray.300");
 
   return (
-    <Card bg={cardBg} shadow="md" mb={4} overflow="hidden">
-      <CardBody p={4} borderBottom="1px" borderColor={borderColor}>
+    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="border-b border-gray-200 p-4">
         {/* Subreddit and metadata */}
-        <HStack spacing={2} fontSize="xs" color="gray.500" mb={2}>
-          <Badge colorScheme="blue" variant="subtle">{post.subreddit}</Badge>
-          <Text>•</Text>
-          <Text>Posted by {post.author}</Text>
-          <Text>•</Text>
-          <Text>{formatDate(post.created_utc)}</Text>
-        </HStack>
+        <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-gray-500">
+          <span className="rounded-full bg-orange-50 px-2 py-0.5 font-semibold text-[#FF4500]">
+            {post.subreddit}
+          </span>
+          <span>|</span>
+          <span>Posted by {post.author}</span>
+          <span>|</span>
+          <span>{formatDate(post.created_utc)}</span>
+        </div>
 
         {/* Post title */}
-        <Heading size="md" mb={2}>
-          <Text as="span" color="gray.400" mr={2}>#{index + 1}</Text>
-          <Link
+        <h3 className="mb-2 text-lg font-semibold text-gray-900">
+          <span className="mr-2 text-gray-400">#{index + 1}</span>
+          <a
             href={post.permalink}
-            isExternal
-            _hover={{ color: "orange.500" }}
+            target="_blank"
+            rel="noreferrer"
+            className="hover:text-reddit-orange"
           >
             {post.title}
-          </Link>
-        </Heading>
+          </a>
+        </h3>
 
         {/* Post body */}
         {post.body && (
-          <Box
-            fontSize="sm"
-            color={bodyColor}
-            mb={3}
-            maxH="48"
-            overflowY="auto"
-            whiteSpace="pre-wrap"
-          >
+          <div className="mb-3 max-h-48 overflow-y-auto whitespace-pre-wrap text-sm text-gray-600">
             {post.body}
-          </Box>
+          </div>
         )}
 
         {/* Post stats */}
-        <HStack spacing={4} fontSize="sm" color="gray.500">
-          <HStack spacing={1}>
-            <Icon as={TriangleUpIcon} />
-            <Text>{post.score} points</Text>
-          </HStack>
-          <Button
-            variant="ghost"
-            size="sm"
-            leftIcon={<ChatIcon />}
-            rightIcon={showComments ? <ChevronUpIcon /> : <ChevronDownIcon />}
+        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
+          <div className="inline-flex items-center gap-1">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M12 19V6" />
+              <path d="M5 12l7-7 7 7" />
+            </svg>
+            <span>{post.score} points</span>
+          </div>
+          <button
+            type="button"
             onClick={() => setShowComments(!showComments)}
-            _hover={{ color: "orange.500" }}
+            className="inline-flex items-center gap-2 rounded-md px-2 py-1 text-sm hover:text-reddit-orange"
           >
-            {post.num_comments} comments
-          </Button>
-        </HStack>
-      </CardBody>
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21 15a4 4 0 0 1-4 4H7l-4 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+            </svg>
+            <span>{post.num_comments} comments</span>
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              {showComments ? (
+                <path d="M18 15l-6-6-6 6" />
+              ) : (
+                <path d="M6 9l6 6 6-6" />
+              )}
+            </svg>
+          </button>
+        </div>
+      </div>
 
       {/* Comments section */}
-      <Collapse in={showComments} animateOpacity>
-        <Box p={4} bg={commentsBg} maxH="96" overflowY="auto">
+      {showComments && (
+        <div className="max-h-96 overflow-y-auto bg-gray-50 p-4">
           {post.comments.length > 0 ? (
-            <VStack spacing={3} align="stretch">
+            <div className="flex flex-col gap-3">
               {post.comments.map((comment) => (
                 <CommentItem key={comment.id} comment={comment} />
               ))}
-            </VStack>
+            </div>
           ) : (
-            <Text color="gray.500" fontSize="sm" fontStyle="italic">
-              No comments available
-            </Text>
+            <p className="text-sm italic text-gray-500">No comments available</p>
           )}
-        </Box>
-      </Collapse>
-    </Card>
+        </div>
+      )}
+    </div>
   );
 }
-

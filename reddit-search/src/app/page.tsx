@@ -5,16 +5,6 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import {
-  Box,
-  Container,
-  Heading,
-  Text,
-  VStack,
-  HStack,
-  useColorModeValue,
-} from "@chakra-ui/react";
-import { SearchIcon } from "@chakra-ui/icons";
 import SearchBar from "@/components/SearchBar";
 import PostList from "@/components/PostList";
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -31,9 +21,6 @@ export default function Home() {
   const [afterCursor, setAfterCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
-
-  const mainBg = useColorModeValue("gray.50", "gray.900");
-  const headerBg = useColorModeValue("white", "gray.800");
 
   const fetchResults = useCallback(
     async (keyword: string, after?: string): Promise<SearchResponse | null> => {
@@ -105,24 +92,38 @@ export default function Home() {
   }, [searchKeyword, handleSearch]);
 
   return (
-    <Box as="main" minH="100vh" bg={mainBg}>
+    <main className="min-h-screen">
       {/* Header */}
-      <Box as="header" bg={headerBg} shadow="sm">
-        <Container maxW="6xl" py={6}>
-          <HStack spacing={3} mb={6}>
-            <Text fontSize="4xl">🔍</Text>
-            <Heading size="lg">Reddit Search</Heading>
-          </HStack>
+      <header className="bg-white shadow-sm">
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-6 py-6">
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="flex items-center gap-3 text-xl font-semibold text-gray-900">
+                <img
+                  src="/assets/redditheader.png"
+                  alt="Reddit"
+                  className="h-8 w-auto"
+                />
+                <span>Search</span>
+              </h1>
+              <p className="text-sm text-gray-500">
+                Search posts and comments across all subreddits
+              </p>
+            </div>
+          </div>
           <SearchBar onSearch={handleSearch} isLoading={isLoading} />
-        </Container>
-      </Box>
+        </div>
+      </header>
 
       {/* Main content */}
-      <Container maxW="6xl" py={8}>
+      <div className="mx-auto max-w-6xl px-6 py-8">
         {error && <ErrorMessage message={error} onRetry={handleRetry} />}
 
         {isLoading && (
-          <LoadingSpinner message="Searching Reddit and fetching comments..." size="lg" />
+          <LoadingSpinner
+            message="Searching Reddit and fetching comments..."
+            size="lg"
+          />
         )}
 
         {!isLoading && hasSearched && (
@@ -135,19 +136,32 @@ export default function Home() {
         )}
 
         {!hasSearched && !isLoading && (
-          <VStack py={16} spacing={4}>
-            <SearchIcon boxSize={16} color="gray.400" />
-            <Heading size="md">Search Reddit</Heading>
-            <Text color="gray.500">
+          <div className="py-16 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-8 w-8"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900">Search Reddit</h2>
+            <p className="mt-2 text-sm text-gray-500">
               Enter a keyword to search for posts and comments across all subreddits.
-            </Text>
-          </VStack>
+            </p>
+          </div>
         )}
-      </Container>
+      </div>
 
       {/* AI Chat Panel */}
       <ChatPanel posts={posts} keyword={searchKeyword} />
-    </Box>
+    </main>
   );
 }
-

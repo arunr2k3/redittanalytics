@@ -57,6 +57,17 @@ function convertToLangChainMessages(messages: ChatMessage[]): BaseMessage[] {
   });
 }
 
+const MAX_POSTS_IN_PROMPT = 5;
+const MAX_COMMENTS_PER_POST = 3;
+const MAX_POST_BODY_CHARS = 800;
+const MAX_COMMENT_CHARS = 240;
+const MAX_TOTAL_PROMPT_CHARS = 12000;
+
+function truncateText(value: string, maxChars: number): string {
+  if (value.length <= maxChars) return value;
+  return `${value.slice(0, maxChars - 3)}...`;
+}
+
 function buildSystemPrompt(context?: RedditContext): string {
   let prompt = `You are a helpful AI assistant integrated with a Reddit Search application.
 
@@ -67,19 +78,29 @@ Your capabilities:
 - You're honest about limitations`;
 
   if (context && context.posts.length > 0) {
+    const posts = context.posts.slice(0, MAX_POSTS_IN_PROMPT);
     prompt += `\n\n--- REDDIT SEARCH CONTEXT ---
 The user searched for: "${context.keyword}"
-Found ${context.posts.length} posts. Here are ALL the posts:
+Found ${context.posts.length} posts. Showing the top ${posts.length}:
 
 `;
-    context.posts.forEach((post, i) => {
+    posts.forEach((post, i) => {
+      const body = post.body ? truncateText(post.body, MAX_POST_BODY_CHARS) : "";
+      const comments = post.comments
+        .slice(0, MAX_COMMENTS_PER_POST)
+        .map((c) => `[${c.author}]: ${truncateText(c.body, MAX_COMMENT_CHARS)}`)
+        .join(" | ");
       prompt += `Post ${i + 1}: "${post.title}" in r/${post.subreddit} (score: ${post.score})
-${post.body ? `Content: ${post.body}` : ""}
-Top comments: ${post.comments.map(c => `[${c.author}]: ${c.body}`).join(" | ")}
+${body ? `Content: ${body}` : ""}
+Top comments: ${comments || "None"}
 
 `;
     });
-    prompt += `\nYou have context from ALL ${context.posts.length} posts. Reference them by number when answering.`;
+    prompt += `\nYou have context from ${posts.length} posts. Reference them by number when answering.`;
+  }
+
+  if (prompt.length > MAX_TOTAL_PROMPT_CHARS) {
+    prompt = truncateText(prompt, MAX_TOTAL_PROMPT_CHARS);
   }
 
   return prompt;
@@ -99,15 +120,27 @@ export async function chat(messages: ChatMessage[], context?: RedditContext): Pr
     console.log("Sending message to Gemini...");
     const response = await model.invoke(langChainMessages);
 
-    const content = response.content;
+    const { content } = response;
 
+    // Normalize the response content into plain text
     if (typeof content === "string") {
       return content;
-    } else if (Array.isArray(content)) {
-      return content.map((part) => (typeof part === "string" ? part : part.text || "")).join("");
     }
 
-    return String(content);
+    const asArray = Array.isArray(content) ? content : [content];
+    const parts = asArray
+      .map((part) => {
+        if (typeof part === "string") return part;
+        if (part && typeof (part as { text?: unknown }).text === "string") {
+          return (part as { text: string }).text;
+        }
+        // Fallback: try to stringify known shapes
+        return "";
+      })
+      .filter(Boolean)
+      .join("");
+
+    return parts || JSON.stringify(content);
   } catch (error) {
     console.error("Chatbot error:", error);
 
@@ -124,4 +157,3 @@ export async function chat(messages: ChatMessage[], context?: RedditContext): Pr
     throw new Error("An unexpected error occurred");
   }
 }
-

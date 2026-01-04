@@ -3,8 +3,6 @@
  * Displays a spinning loader with optional message
  */
 
-import { VStack, Spinner, Text } from "@chakra-ui/react";
-
 interface LoadingSpinnerProps {
   message?: string;
   size?: "sm" | "md" | "lg";
@@ -15,25 +13,18 @@ export default function LoadingSpinner({
   size = "md",
 }: LoadingSpinnerProps) {
   const sizeMap = {
-    sm: "sm",
-    md: "lg",
-    lg: "xl",
+    sm: "h-4 w-4 border-2",
+    md: "h-6 w-6 border-2",
+    lg: "h-8 w-8 border-4",
   } as const;
 
   return (
-    <VStack p={8} spacing={4}>
-      <Spinner
-        size={sizeMap[size]}
-        color="orange.500"
-        thickness="4px"
-        emptyColor="gray.200"
+    <div className="flex flex-col items-center gap-4 p-8">
+      <div
+        className={`animate-spin rounded-full border-gray-200 border-t-reddit-orange ${sizeMap[size]}`}
+        aria-label="Loading"
       />
-      {message && (
-        <Text fontSize="sm" color="gray.500">
-          {message}
-        </Text>
-      )}
-    </VStack>
+      {message && <p className="text-sm text-gray-500">{message}</p>}
+    </div>
   );
 }
-

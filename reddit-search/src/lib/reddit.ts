@@ -20,6 +20,9 @@ const REDDIT_BASE = "https://www.reddit.com";
 // Rate limiting configuration (public API is more restrictive ~10 req/min to be safe)
 const RATE_LIMIT_REQUESTS = 10;
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_POSTS_WITH_COMMENTS = 10;
+const COMMENT_FETCH_LIMIT = 50;
+const MAX_CONCURRENT_COMMENT_FETCHES = 3;
 
 /**
  * Rate limiter to respect Reddit's API limits
@@ -149,7 +152,7 @@ function parseComments(
 async function fetchPostComments(
   subreddit: string,
   postId: string,
-  limit: number = 100
+  limit: number = COMMENT_FETCH_LIMIT
 ): Promise<ParsedComment[]> {
   try {
     // Reddit returns [post, comments] array for comment endpoints
@@ -167,6 +170,29 @@ async function fetchPostComments(
     console.error(`Error fetching comments for ${postId}:`, error);
     return [];
   }
+}
+
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  mapper: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) return [];
+
+  const results: R[] = new Array(items.length);
+  let nextIndex = 0;
+  const workerCount = Math.min(limit, items.length);
+
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (true) {
+      const current = nextIndex++;
+      if (current >= items.length) return;
+      results[current] = await mapper(items[current], current);
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
 }
 
 /**
@@ -199,33 +225,36 @@ export async function searchReddit(params: SearchParams): Promise<SearchResponse
     `/search?${queryParams.toString()}`
   );
 
-  const posts: ParsedPost[] = [];
+  const maxPosts = Math.min(limit, MAX_POSTS_WITH_COMMENTS);
+  const postChildren = searchResults.data.children
+    .filter((child) => child.kind === "t3")
+    .slice(0, maxPosts);
 
-  // Process each post and fetch its comments
-  for (const child of searchResults.data.children) {
-    if (child.kind !== "t3") continue; // t3 = post/link
+  const posts = await mapWithConcurrency(
+    postChildren,
+    MAX_CONCURRENT_COMMENT_FETCHES,
+    async (child) => {
+      const post: RedditPost = child.data;
 
-    const post: RedditPost = child.data;
+      console.log(`Fetching comments for: ${post.title.substring(0, 50)}...`);
 
-    console.log(`Fetching comments for: ${post.title.substring(0, 50)}...`);
+      const comments = await fetchPostComments(post.subreddit, post.id);
 
-    // Fetch comments for this post
-    const comments = await fetchPostComments(post.subreddit, post.id);
-
-    posts.push({
-      id: post.id,
-      title: post.title,
-      body: post.selftext || "",
-      author: post.author || "[deleted]",
-      created_utc: post.created_utc,
-      subreddit: post.subreddit,
-      score: post.score,
-      num_comments: post.num_comments,
-      permalink: `https://reddit.com${post.permalink}`,
-      url: post.url,
-      comments,
-    });
-  }
+      return {
+        id: post.id,
+        title: post.title,
+        body: post.selftext || "",
+        author: post.author || "[deleted]",
+        created_utc: post.created_utc,
+        subreddit: post.subreddit,
+        score: post.score,
+        num_comments: post.num_comments,
+        permalink: `https://reddit.com${post.permalink}`,
+        url: post.url,
+        comments,
+      };
+    }
+  );
 
   return {
     posts,
@@ -235,4 +264,3 @@ export async function searchReddit(params: SearchParams): Promise<SearchResponse
     has_more: searchResults.data.after !== null,
   };
 }
-

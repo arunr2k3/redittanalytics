@@ -6,16 +6,6 @@
 "use client";
 
 import { useState, FormEvent } from "react";
-import {
-  Box,
-  Input,
-  Button,
-  HStack,
-  Text,
-  Spinner,
-  useColorModeValue,
-} from "@chakra-ui/react";
-import { SearchIcon } from "@chakra-ui/icons";
 
 interface SearchBarProps {
   onSearch: (keyword: string) => void;
@@ -24,7 +14,6 @@ interface SearchBarProps {
 
 export default function SearchBar({ onSearch, isLoading }: SearchBarProps) {
   const [keyword, setKeyword] = useState("");
-  const inputBg = useColorModeValue("white", "gray.800");
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -34,34 +23,52 @@ export default function SearchBar({ onSearch, isLoading }: SearchBarProps) {
   };
 
   return (
-    <Box as="form" onSubmit={handleSubmit} w="full" maxW="2xl" mx="auto">
-      <HStack spacing={2}>
-        <Input
+    <form onSubmit={handleSubmit} className="w-full max-w-2xl mx-auto">
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <input
           value={keyword}
           onChange={(e) => setKeyword(e.target.value)}
           placeholder="Search Reddit posts and comments..."
-          size="lg"
-          bg={inputBg}
-          borderColor="gray.300"
-          _focus={{ borderColor: "orange.500", boxShadow: "0 0 0 1px orange" }}
-          isDisabled={isLoading}
+          disabled={isLoading}
           aria-label="Search keyword"
+          className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm
+                     focus:border-reddit-orange focus:outline-none focus:ring-2 focus:ring-orange-200
+                     disabled:cursor-not-allowed disabled:bg-gray-100"
         />
-        <Button
+        <button
           type="submit"
-          colorScheme="orange"
-          size="lg"
-          px={6}
-          isDisabled={isLoading || !keyword.trim()}
-          leftIcon={isLoading ? <Spinner size="sm" /> : <SearchIcon />}
+          disabled={isLoading || !keyword.trim()}
+          className="inline-flex items-center justify-center gap-2 rounded-lg bg-reddit-orange px-5 py-3 text-sm font-semibold text-white
+                     hover:bg-orange-600 disabled:cursor-not-allowed disabled:bg-orange-300 sm:min-w-[120px]"
         >
-          {isLoading ? "Searching..." : "Search"}
-        </Button>
-      </HStack>
-      <Text mt={2} fontSize="sm" color="gray.500">
+          {isLoading ? (
+            <span className="inline-flex items-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              Searching...
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-2">
+              <svg
+                viewBox="0 0 24 24"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              Search
+            </span>
+          )}
+        </button>
+      </div>
+      <p className="mt-2 text-sm text-gray-500">
         Search across all subreddits. Results include posts and their comments.
-      </Text>
-    </Box>
+      </p>
+    </form>
   );
 }
-

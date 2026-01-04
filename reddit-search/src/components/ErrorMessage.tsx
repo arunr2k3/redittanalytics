@@ -3,17 +3,6 @@
  * Displays error messages with retry option
  */
 
-import {
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
-  Button,
-  Box,
-  Text,
-  Code,
-} from "@chakra-ui/react";
-
 interface ErrorMessageProps {
   message: string;
   onRetry?: () => void;
@@ -21,34 +10,49 @@ interface ErrorMessageProps {
 
 export default function ErrorMessage({ message, onRetry }: ErrorMessageProps) {
   return (
-    <Alert status="error" variant="left-accent" borderRadius="md" my={4} flexDirection="column" alignItems="flex-start">
-      <Box display="flex" alignItems="center" w="full">
-        <AlertIcon />
-        <Box flex="1">
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{message}</AlertDescription>
-        </Box>
+    <div className="my-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-700">
+      <div className="flex items-start gap-3">
+        <svg
+          viewBox="0 0 24 24"
+          className="mt-0.5 h-5 w-5"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <div className="flex-1">
+          <div className="text-sm font-semibold">Error</div>
+          <div className="text-sm">{message}</div>
+        </div>
         {onRetry && (
-          <Button size="sm" colorScheme="red" variant="ghost" onClick={onRetry}>
+          <button
+            onClick={onRetry}
+            className="rounded-md px-2 py-1 text-sm text-red-700 hover:bg-red-100"
+          >
             Retry
-          </Button>
+          </button>
         )}
-      </Box>
+      </div>
 
       {message.includes("credentials") && (
-        <Text mt={3} fontSize="xs" color="red.600">
-          💡 Make sure you&apos;ve set up your Reddit API credentials in the{" "}
-          <Code colorScheme="red">.env.local</Code> file. See{" "}
-          <Code colorScheme="red">.env.example</Code> for instructions.
-        </Text>
+        <p className="mt-3 text-xs text-red-700">
+          Tip: Set up your Reddit API credentials in{" "}
+          <code className="rounded bg-red-100 px-1">.env.local</code>. See{" "}
+          <code className="rounded bg-red-100 px-1">.env.example</code> for instructions.
+        </p>
       )}
 
       {message.includes("Rate limit") && (
-        <Text mt={3} fontSize="xs" color="red.600">
-          ⏱️ Reddit API rate limit exceeded. Please wait a moment and try again.
-        </Text>
+        <p className="mt-3 text-xs text-red-700">
+          Reddit API rate limit exceeded. Please wait a moment and try again.
+        </p>
       )}
-    </Alert>
+    </div>
   );
 }
-
